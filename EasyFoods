@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>EasyFoods Mejorada</title>
+<style>
+  body { font-family: Arial, sans-serif; background:#f9f9f9; margin:0; padding:0;}
+  header { text-align:center; background:#4CAF50; color:white; padding:1em;}
+  header img { max-width:200px; border-radius:10px; }
+  main { padding: 1em; max-width: 700px; margin: auto;}
+  label {display:block; margin-top:1em; font-weight:bold;}
+  select, input[type="number"] {width:100%; padding:0.5em; font-size:1em;}
+  button {margin-top:1em; padding:0.7em 1.2em; background:#4CAF50; color:#fff; border:none; border-radius:5px; cursor:pointer;}
+  button:hover {background:#45a049;}
+  ul {list-style:none; padding:0;}
+  ul li {background:#e2f0d9; margin:0.3em 0; padding:0.6em; border-radius:4px;}
+  #recipes {margin-top:2em;}
+  .recipe {background:#fff; padding:1em; margin-bottom:1em; border-radius:6px; box-shadow: 0 2px 5px rgba(0,0,0,0.1);}
+  .recipe h3 {margin:0 0 0.5em 0;}
+  #ingredients-list { margin-top: 0.5em; }
+  #ingredients-list span {background:#8bc34a; color:#fff; padding:3px 7px; border-radius:12px; margin-right:5px; display:inline-block; margin-bottom:5px; cursor:pointer;}
+  #ingredients-list span:hover {background:#558b2f;}
+  #photo-section {margin-top:1em; text-align:center;}
+  #photo-section img {max-width:100%; max-height:200px; margin-top:0.5em; border-radius:8px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>EasyFoods</h1>
+  <img src="https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=700&q=80" alt="Familia cocinando" />
+</header>
+<main>
+  <label for="ingredient-select">Selecciona ingredientes (puedes elegir varios):</label>
+  <select id="ingredient-select" multiple size="8">
+    <option value="apio">Apio</option>
+    <option value="tomate">Tomate</option>
+    <option value="pollo">Pollo</option>
+    <option value="pescado">Pescado</option>
+    <option value="zanahoria">Zanahoria</option>
+    <option value="queso">Queso</option>
+    <option value="arroz">Arroz</option>
+    <option value="pasta">Pasta</option>
+    <option value="cebolla">Cebolla</option>
+    <option value="ajo">Ajo</option>
+    <option value="lechuga">Lechuga</option>
+  </select>
+
+  <div id="ingredients-list"></div>
+
+  <label for="calorie-input">Calorías máximas deseadas:</label>
+  <input type="number" id="calorie-input" min="50" max="2000" step="10" placeholder="Ej. 500" />
+
+  <label for="healthy-option">¿Quieres solo recetas saludables?</label>
+  <select id="healthy-option">
+    <option value="all">No importa</option>
+    <option value="healthy">Sí, solo saludables</option>
+  </select>
+
+  <button id="search-btn">Buscar recetas</button>
+
+  <div id="photo-section">
+    <button id="take-photo-btn">Tomar o subir foto de ingredientes</button>
+    <input type="file" id="input-file" accept="image/*" capture="environment" style="display:none" />
+    <div id="photo-preview"></div>
+  </div>
+
+  <div id="recipes"></div>
+</main>
+
+<script>
+  const selectedIngredients = new Set();
+
+  const ingredientSelect = document.getElementById('ingredient-select');
+  const ingredientsListDiv = document.getElementById('ingredients-list');
+  const calorieInput = document.getElementById('calorie-input');
+  const healthyOption = document.getElementById('healthy-option');
+  const searchBtn = document.getElementById('search-btn');
+  const recipesDiv = document.getElementById('recipes');
+
+  const takePhotoBtn = document.getElementById('take-photo-btn');
+  const inputFile = document.getElementById('input-file');
+  const photoPreview = document.getElementById('photo-preview');
+
+  const recipesDB = [
+    {
+      name: "Sopa de Apio y Zanahoria",
+      ingredients: ["apio", "zanahoria", "cebolla", "ajo"],
+      calories: 150,
+      healthy: true,
+      time: "30 min",
+      description: "Una sopa ligera y saludable perfecta para días frescos."
+    },
+    {
+      name: "Pollo al horno con arroz",
+      ingredients: ["pollo", "arroz", "ajo", "cebolla"],
+      calories: 600,
+      healthy: false,
+      time: "60 min",
+      description: "Pollo jugoso acompañado de arroz especiado."
+    },
+    {
+      name: "Ensalada fresca de lechuga y tomate",
+      ingredients: ["lechuga", "tomate", "queso"],
+      calories: 200,
+      healthy: true,
+      time: "10 min",
+      description: "Ensalada rápida, fresca y saludable."
+    },
+    {
+      name: "Pasta con salsa de tomate",
+      ingredients: ["pasta", "tomate", "ajo", "queso"],
+      calories: 550,
+      healthy: false,
+      time: "25 min",
+      description: "Pasta con una rica salsa casera de tomate."
+    },
+    {
+      name: "Filete de pescado a la plancha",
+      ingredients: ["pescado", "ajo", "limón"],
+      calories: 350,
+      healthy: true,
+      time: "20 min",
+      description: "Pescado fresco y saludable para una comida ligera."
+    }
+  ];
+
+  function updateIngredientsList() {
+    ingredientsListDiv.innerHTML = '';
+    selectedIngredients.forEach(ing => {
+      const span = document.createElement('span');
+      span.textContent = ing;
+      span.title = "Click para eliminar";
+      span.onclick = () => {
+        selectedIngredients.delete(ing);
+        updateIngredientsList();
+        updateSelectOptions();
+      };
+      ingredientsListDiv.appendChild(span);
+    });
+  }
+
+  function updateSelectOptions() {
+    for (let option of ingredientSelect.options) {
+      option.selected = selectedIngredients.has(option.value);
+    }
+  }
+
+  ingredientSelect.addEventListener('change', () => {
+    for (let option of ingredientSelect.options) {
+      if (option.selected) selectedIngredients.add(option.value);
+      else selectedIngredients.delete(option.value);
+    }
+    updateIngredientsList();
+  });
+
+  function addIngredient(ing) {
+    const validIngredients = [..]()
